@@ -1,4 +1,4 @@
-.PHONY: debug fe server sync_db dump_db middleware web down clean python help
+.PHONY: debug fe server sync_db dump_db middleware web down clean python help sync-upstream sync-upstream-merge sync-upstream-rebase
 
 # 定义脚本路径
 SCRIPTS_DIR := ./scripts
@@ -121,6 +121,18 @@ oceanbase_server_debug:
 	@echo "Building and run OceanBase debug server..."
 	@APP_ENV=debug bash $(BUILD_SERVER_SCRIPT) -start
 
+sync-upstream:
+	@echo "Syncing from upstream repository (merge strategy)..."
+	@bash $(SCRIPTS_DIR)/sync-upstream.sh
+
+sync-upstream-merge:
+	@echo "Syncing from upstream repository (merge strategy)..."
+	@bash $(SCRIPTS_DIR)/sync-upstream-advanced.sh -s merge
+
+sync-upstream-rebase:
+	@echo "Syncing from upstream repository (rebase strategy)..."
+	@bash $(SCRIPTS_DIR)/sync-upstream-advanced.sh -s rebase
+
 help:
 	@echo "Usage: make [target]"
 	@echo ""
@@ -142,6 +154,11 @@ help:
 	@echo "  python           - Setup python environment."
 	@echo "  atlas-hash       - Rehash atlas migration files."
 	@echo "  setup_es_index   - Setup elasticsearch index."
+	@echo ""
+	@echo "Git Sync Commands:"
+	@echo "  sync-upstream         - Sync from upstream repository (merge strategy, default)."
+	@echo "  sync-upstream-merge   - Sync from upstream repository using merge strategy."
+	@echo "  sync-upstream-rebase  - Sync from upstream repository using rebase strategy."
 	@echo ""
 	@echo "OceanBase Commands:"
 	@echo "  oceanbase_env    - Setup OceanBase environment file (like 'env')."

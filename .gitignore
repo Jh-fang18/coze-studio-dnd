@@ -52,7 +52,7 @@ node_modules
 common/temp
 .rush
 .eslintcache
-
+.claude/
 
 backend/conf/model/*.yaml
 values-dev.yaml
