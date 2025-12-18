@@ -32,8 +32,6 @@ import (
 	projectAPI "github.com/coze-dev/coze-studio/backend/api/model/app/intelligence/project"
 	publishAPI "github.com/coze-dev/coze-studio/backend/api/model/app/intelligence/publish"
 	taskAPI "github.com/coze-dev/coze-studio/backend/api/model/app/intelligence/task"
-	connectorModel "github.com/coze-dev/coze-studio/backend/api/model/crossdomain/connector"
-	knowledgeModel "github.com/coze-dev/coze-studio/backend/api/model/crossdomain/knowledge"
 	"github.com/coze-dev/coze-studio/backend/api/model/data/database/table"
 	"github.com/coze-dev/coze-studio/backend/api/model/data/variable/project_memory"
 	"github.com/coze-dev/coze-studio/backend/api/model/playground"
@@ -45,17 +43,21 @@ import (
 	"github.com/coze-dev/coze-studio/backend/application/memory"
 	"github.com/coze-dev/coze-studio/backend/application/plugin"
 	"github.com/coze-dev/coze-studio/backend/application/workflow"
-	pluginConsts "github.com/coze-dev/coze-studio/backend/crossdomain/contract/plugin/consts"
+	"github.com/coze-dev/coze-studio/backend/bizpkg/config"
+	connectorModel "github.com/coze-dev/coze-studio/backend/crossdomain/connector/model"
+
+	knowledgeModel "github.com/coze-dev/coze-studio/backend/crossdomain/knowledge/model"
+	pluginConsts "github.com/coze-dev/coze-studio/backend/crossdomain/plugin/consts"
 	"github.com/coze-dev/coze-studio/backend/domain/app/entity"
 	"github.com/coze-dev/coze-studio/backend/domain/app/repository"
 	"github.com/coze-dev/coze-studio/backend/domain/app/service"
 	connector "github.com/coze-dev/coze-studio/backend/domain/connector/service"
 	variables "github.com/coze-dev/coze-studio/backend/domain/memory/variables/service"
+	"github.com/coze-dev/coze-studio/backend/domain/permission"
 	"github.com/coze-dev/coze-studio/backend/domain/plugin/dto"
 	searchEntity "github.com/coze-dev/coze-studio/backend/domain/search/entity"
 	search "github.com/coze-dev/coze-studio/backend/domain/search/service"
 	user "github.com/coze-dev/coze-studio/backend/domain/user/service"
-	"github.com/coze-dev/coze-studio/backend/infra/modelmgr"
 	"github.com/coze-dev/coze-studio/backend/infra/storage"
 	"github.com/coze-dev/coze-studio/backend/pkg/errorx"
 	"github.com/coze-dev/coze-studio/backend/pkg/lang/conv"
@@ -76,7 +78,6 @@ type APPApplicationService struct {
 
 	oss             storage.Storage
 	projectEventBus search.ProjectEventBus
-	modelMgr        modelmgr.Manager
 
 	userSVC user.User
 
@@ -90,12 +91,12 @@ func (a *APPApplicationService) DraftProjectCreate(ctx context.Context, req *pro
 		return nil, errorx.New(errno.ErrAppPermissionCode, errorx.KV(errno.APPMsgKey, "session is required"))
 	}
 
-	respModel, err := a.modelMgr.ListInUseModel(ctx, 1, nil)
+	modelList, err := config.ModelConf().GetOnlineModelListWithLimit(ctx, 1)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(respModel.ModelList) == 0 {
+	if len(modelList) == 0 {
 		return nil, errorx.New(errno.ErrAppNoModelInUseCode)
 	}
 
@@ -390,7 +391,37 @@ func (a *APPApplicationService) getLatestPublishRecord(ctx context.Context, appI
 	return latestRecord, nil
 }
 
+func checkUserSpace(ctx context.Context, uid int64, spaceID int64) error {
+	// Use permission service to check workspace access
+	result, err := permission.DefaultSVC().CheckAuthz(ctx, &permission.CheckAuthzData{
+		ResourceIdentifier: []*permission.ResourceIdentifier{
+			{
+				Type:   permission.ResourceTypeWorkspace,
+				ID:     []int64{spaceID},
+				Action: permission.ActionRead,
+			},
+		},
+		OperatorID: uid,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to check workspace permission: %w", err)
+	}
+
+	if result.Decision != permission.Allow {
+		return fmt.Errorf("user %d does not have access to space %d", uid, spaceID)
+	}
+
+	return nil
+}
+
 func (a *APPApplicationService) ReportUserBehavior(ctx context.Context, req *playground.ReportUserBehaviorRequest) (resp *playground.ReportUserBehaviorResponse, err error) {
+	uid := ctxutil.MustGetUIDFromCtx(ctx)
+
+	err = checkUserSpace(ctx, uid, req.GetSpaceID())
+	if err != nil {
+		return nil, err
+	}
+
 	err = a.projectEventBus.PublishProject(ctx, &searchEntity.ProjectDomainEvent{
 		OpType: searchEntity.Updated,
 		Project: &searchEntity.ProjectDocument{

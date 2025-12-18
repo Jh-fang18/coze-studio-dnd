@@ -60,6 +60,12 @@ const (
 	RMQAccessKey             = "RMQ_ACCESS_KEY"
 	PulsarServiceURL         = "PULSAR_SERVICE_URL"
 	PulsarJWTToken           = "PULSAR_JWT_TOKEN"
+	NATSJWTToken             = "NATS_JWT_TOKEN"
+	NATSNKeySeed             = "NATS_NKEY_SEED"
+	NATSUsername             = "NATS_USERNAME"
+	NATSPassword             = "NATS_PASSWORD"
+	NATSToken                = "NATS_TOKEN"
+	NATSUseJetStream         = "NATS_USE_JETSTREAM"
 	RMQTopicApp              = "opencoze_search_app"
 	RMQTopicResource         = "opencoze_search_resource"
 	RMQTopicKnowledge        = "opencoze_knowledge"
@@ -88,14 +94,6 @@ const (
 	UseSSL      = "USE_SSL"
 	SSLCertFile = "SSL_CERT_FILE"
 	SSLKeyFile  = "SSL_KEY_FILE"
-
-	OCRType     = "OCR_TYPE"
-	VeOCRAK     = "VE_OCR_AK"
-	VeOCRSK     = "VE_OCR_SK"
-	PPOCRAPIURL = "PADDLEOCR_OCR_API_URL"
-
-	ParserType        = "PARSER_TYPE"
-	PPStructureAPIURL = "PADDLEOCR_STRUCTURE_API_URL"
 )
 
 const (
@@ -135,4 +133,14 @@ const (
 const (
 	DisableUserRegistration = "DISABLE_USER_REGISTRATION"
 	AllowRegistrationEmail  = "ALLOW_REGISTRATION_EMAIL"
+)
+
+const (
+	PublishInfoKeyPrefix = "agent:publish:last"
+)
+
+const (
+	BaseConfigNameSpace  = "kv_config_ns"
+	KnowledgeConfigSpace = "kv_knowledge_ns"
+	ModelConfigSpace     = "kv_model_ns"
 )

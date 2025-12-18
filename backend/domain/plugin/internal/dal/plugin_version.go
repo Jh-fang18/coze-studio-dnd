@@ -25,7 +25,7 @@ import (
 	"gorm.io/gorm"
 
 	plugin_develop_common "github.com/coze-dev/coze-studio/backend/api/model/plugin_develop/common"
-	pluginModel "github.com/coze-dev/coze-studio/backend/crossdomain/contract/plugin/model"
+	pluginModel "github.com/coze-dev/coze-studio/backend/crossdomain/plugin/model"
 	"github.com/coze-dev/coze-studio/backend/domain/plugin/dto"
 	"github.com/coze-dev/coze-studio/backend/domain/plugin/entity"
 	"github.com/coze-dev/coze-studio/backend/domain/plugin/internal/dal/model"
@@ -71,6 +71,8 @@ func (p *PluginVersionDAO) getSelected(opt *PluginSelectedOption) (selected []fi
 	}
 
 	table := p.query.PluginVersion
+	// Always include ID, it may be used as cursor in pagination loops
+	selected = append(selected, table.ID)
 
 	if opt.PluginID {
 		selected = append(selected, table.PluginID)

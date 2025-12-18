@@ -29,13 +29,14 @@ import (
 	"github.com/coze-dev/coze-studio/backend/api/model/app/bot_open_api"
 	"github.com/coze-dev/coze-studio/backend/api/model/app/developer_api"
 	intelligence "github.com/coze-dev/coze-studio/backend/api/model/app/intelligence/common"
-	"github.com/coze-dev/coze-studio/backend/api/model/crossdomain/database"
 	"github.com/coze-dev/coze-studio/backend/api/model/data/database/table"
 	"github.com/coze-dev/coze-studio/backend/api/model/playground"
 	"github.com/coze-dev/coze-studio/backend/application/base/ctxutil"
-	"github.com/coze-dev/coze-studio/backend/crossdomain/contract/agent"
-	crossdatabase "github.com/coze-dev/coze-studio/backend/crossdomain/contract/database"
-	pluginConsts "github.com/coze-dev/coze-studio/backend/crossdomain/contract/plugin/consts"
+	"github.com/coze-dev/coze-studio/backend/crossdomain/agent"
+	crossdatabase "github.com/coze-dev/coze-studio/backend/crossdomain/database"
+	database "github.com/coze-dev/coze-studio/backend/crossdomain/database/model"
+	pluginConsts "github.com/coze-dev/coze-studio/backend/crossdomain/plugin/consts"
+	crossuser "github.com/coze-dev/coze-studio/backend/crossdomain/user"
 	"github.com/coze-dev/coze-studio/backend/domain/agent/singleagent/entity"
 	singleagent "github.com/coze-dev/coze-studio/backend/domain/agent/singleagent/service"
 	variableEntity "github.com/coze-dev/coze-studio/backend/domain/memory/variables/entity"
@@ -325,7 +326,7 @@ func (s *SingleAgentApplicationService) applyAgentUpdates(target *entity.SingleA
 		target.OnboardingInfo = patch.OnboardingInfo
 	}
 
-	if patch.ModelInfo != nil {
+	if patch.ModelInfo != nil && patch.ModelInfo.ModelId != nil {
 		target.ModelInfo = patch.ModelInfo
 	}
 
@@ -624,7 +625,36 @@ func (s *SingleAgentApplicationService) ListAgentPublishHistory(ctx context.Cont
 	return resp, nil
 }
 
+func checkUserSpace(ctx context.Context, uid int64, spaceID int64) error {
+	spaces, err := crossuser.DefaultSVC().GetUserSpaceList(ctx, uid)
+	if err != nil {
+		return err
+	}
+
+	var match bool
+	for _, s := range spaces {
+		if s.ID == spaceID {
+			match = true
+			break
+		}
+	}
+
+	if !match {
+		return fmt.Errorf("user %d does not have access to space %d", uid, spaceID)
+	}
+
+	return nil
+}
+
 func (s *SingleAgentApplicationService) ReportUserBehavior(ctx context.Context, req *playground.ReportUserBehaviorRequest) (resp *playground.ReportUserBehaviorResponse, err error) {
+
+	uid := ctxutil.MustGetUIDFromCtx(ctx)
+
+	err = checkUserSpace(ctx, uid, req.GetSpaceID())
+	if err != nil {
+		return nil, err
+	}
+
 	err = s.appContext.EventBus.PublishProject(ctx, &searchEntity.ProjectDomainEvent{
 		OpType: searchEntity.Updated,
 		Project: &searchEntity.ProjectDocument{

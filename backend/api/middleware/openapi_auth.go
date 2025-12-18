@@ -51,6 +51,9 @@ var needAuthPath = map[string]bool{
 	"/v1/workflows/chat":               true,
 	"/v1/workflow/conversation/create": true,
 	"/v3/chat/cancel":                  true,
+	"/v1/conversation/retrieve":        true,
+	"/v3/chat/retrieve":                true,
+	"/v3/chat/message/list":            true,
 }
 
 var needAuthFunc = map[string]bool{

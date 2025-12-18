@@ -26,7 +26,7 @@ import (
 	"gorm.io/gorm"
 
 	common "github.com/coze-dev/coze-studio/backend/api/model/plugin_develop/common"
-	"github.com/coze-dev/coze-studio/backend/crossdomain/contract/plugin/consts"
+	"github.com/coze-dev/coze-studio/backend/crossdomain/plugin/consts"
 	"github.com/coze-dev/coze-studio/backend/domain/plugin/conf"
 	"github.com/coze-dev/coze-studio/backend/domain/plugin/dto"
 	"github.com/coze-dev/coze-studio/backend/domain/plugin/entity"
@@ -71,10 +71,9 @@ func (t *ToolDraftDAO) getSelected(opt *ToolSelectedOption) (selected []field.Ex
 	}
 
 	table := t.query.ToolDraft
+	// Always include ID, it may be used as cursor in pagination loops
+	selected = append(selected, table.ID)
 
-	if opt.ToolID {
-		selected = append(selected, table.ID)
-	}
 	if opt.ActivatedStatus {
 		selected = append(selected, table.ActivatedStatus)
 	}

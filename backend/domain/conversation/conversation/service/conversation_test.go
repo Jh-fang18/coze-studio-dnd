@@ -25,7 +25,7 @@ import (
 	"go.uber.org/mock/gomock"
 
 	"github.com/coze-dev/coze-studio/backend/api/model/conversation/common"
-	"github.com/coze-dev/coze-studio/backend/api/model/crossdomain/conversation"
+	conversation "github.com/coze-dev/coze-studio/backend/crossdomain/conversation/model"
 	"github.com/coze-dev/coze-studio/backend/domain/conversation/conversation/entity"
 	"github.com/coze-dev/coze-studio/backend/domain/conversation/conversation/internal/dal/model"
 	"github.com/coze-dev/coze-studio/backend/domain/conversation/conversation/repository"
@@ -57,7 +57,7 @@ func TestCreateConversation(t *testing.T) {
 
 	createData, err := NewService(components).Create(ctx, &entity.CreateMeta{
 		AgentID:     100000,
-		UserID:      222222,
+		CreatorID:   222222,
 		ConnectorID: 100001,
 		Scene:       common.Scene_Playground,
 		Ext:         "debug ext9999",
