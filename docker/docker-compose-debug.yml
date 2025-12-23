@@ -7,6 +7,8 @@ services:
   mysql:
     image: mysql:8.4.5
     container_name: coze-mysql
+    user: root
+    privileged: true
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-opencoze}
@@ -17,14 +19,26 @@ services:
     ports:
       - '127.0.0.1:3306:3306'
     volumes:
-      - ./data/mysql:/var/lib/mysql
+      - ./data/mysql:/var/lib/mysql:rw
       - ./volumes/mysql/schema.sql:/docker-entrypoint-initdb.d/init.sql
       - ./atlas/opencoze_latest_schema.hcl:/opencoze_latest_schema.hcl:ro
     entrypoint:
       - bash
       - -c
       - |
-        /usr/local/bin/docker-entrypoint.sh mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci &
+        # 确保数据目录存在并设置权限
+        mkdir -p /var/lib/mysql
+        
+        # 设置目录所有权和权限（忽略可能的 SELinux 限制错误）
+        chown -R mysql:mysql /var/lib/mysql 2>/dev/null || true
+        chmod -R 755 /var/lib/mysql 2>/dev/null || true
+        
+        # 删除可能存在的旧 socket 文件
+        rm -f /var/lib/mysql/mysql.sock /var/lib/mysql/mysql.sock.lock 2>/dev/null || true
+        
+        # 启动 MySQL entrypoint（将 chown 警告重定向到 /dev/null）
+        # 这些警告不影响 MySQL 的正常运行
+        /usr/local/bin/docker-entrypoint.sh mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci 2> >(grep -v "chown: changing ownership" | grep -v "Operation not permitted" >&2) &
         MYSQL_PID=$$!
 
         echo 'Waiting for MySQL to start...'
